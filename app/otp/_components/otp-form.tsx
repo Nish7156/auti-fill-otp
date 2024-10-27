@@ -40,7 +40,9 @@ export function OtpForm({ email, phone }: { email: string; phone: string }) {
   function onSubmit(data: z.infer<typeof FormSchema>) {
     console.log(data);
       // router.push(`/user/create-account`);
-      alert(`your otp set ${otp}, ${data.pin}`);
+    // alert(`your otp set ${otp}, ${data.pin}`);
+    console.log(`your otp set ${otp}, ${data.pin}`);
+    
   }
 
   // Auto-submit when the pin is fully filled

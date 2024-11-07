@@ -46,11 +46,13 @@ export function OtpForm({
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     console.log(data);
-    if (page === "user") {
-      router.push(`/user/create-account`);
-    } else if (page === "business") {
-      router.push(`/business/create-account`);
-    }
+    // if (page === "user") {
+    //   router.push(`/user/create-account`);
+    // } else if (page === "business") {
+    //   router.push(`/business/create-account`);
+    // }
+    //@ts-ignore
+    alert("OTP submitted: " + data.pin);
   }
 
   // Auto-submit when the pin is fully filled

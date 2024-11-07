@@ -1,8 +1,8 @@
-"use client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+
 import {
   Form,
   FormControl,
@@ -25,10 +25,17 @@ const FormSchema = z.object({
   }),
 });
 
-export function OtpForm({ email, phone }: { email: string; phone: string }) {
+export function OtpForm({
+  email,
+  phone,
+  page,
+}: {
+  email: string;
+  phone: string;
+  page: "user" | "business";
+}) {
   const router = useRouter();
   const firstOtpInputRef = useRef<HTMLInputElement>(null);
-  const [otp, setOtp] = useState(Array(6).fill(""));
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -39,10 +46,11 @@ export function OtpForm({ email, phone }: { email: string; phone: string }) {
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     console.log(data);
-      // router.push(`/user/create-account`);
-    // alert(`your otp set ${otp}, ${data.pin}`);
-    console.log(`your otp set ${otp}, ${data.pin}`);
-    
+    if (page === "user") {
+      router.push(`/user/create-account`);
+    } else if (page === "business") {
+      router.push(`/business/create-account`);
+    }
   }
 
   // Auto-submit when the pin is fully filled
@@ -58,71 +66,77 @@ export function OtpForm({ email, phone }: { email: string; phone: string }) {
     }
   }, []);
 
-  // Web OTP API logic
   useEffect(() => {
-    if ("OTPCredential" in window) {
-      const ac = new AbortController();
+    if (!("OTPCredential" in window)) return;
 
-      navigator.credentials
-        .get({
+    const abortController = new AbortController();
+
+    const fetchOtp = async () => {
+      try {
+        const otpCredentials: CredentialRequestOptions = {
           //@ts-ignore
           otp: { transport: ["sms"] },
-          signal: ac.signal,
-        })
-        .then((otp) => {
-          //@ts-ignore
-          const otpCode = otp.code.split("").slice(0, 6); // Slice to ensure only 6 digits
-          setOtp(otpCode);
-          form.setValue("pin", otpCode.join("")); // Set OTP in form state
-          ac.abort();
-        })
-        .catch((err) => {
-          ac.abort();
-          console.log(err);
-        });
-    }
+          signal: abortController.signal,
+        };
+
+        const otp = (await navigator.credentials.get(otpCredentials)) as {
+          code: string;
+        } | null;
+
+        if (!otp || !otp.code) {
+          throw new Error("OTP retrieval failed: No OTP code found");
+        }
+
+        const otpCode = otp.code.slice(0, 6); // Ensure only 6 digits
+        form.setValue("pin", otpCode); // Set OTP in form state
+      } catch (err) {
+        console.log("OTP retrieval error:", err);
+      }
+    };
+
+    fetchOtp();
+
+    return () => {
+      abortController.abort(); // Cleanup on component unmount
+    };
   }, []);
 
   return (
-    <>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <FormField
-            control={form.control}
-            name="pin"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="mb-2.5 flex justify-center text-center text-paragraph-lg-bold font-semibold">
-                  Confirmation Code
-                </FormLabel>
-                <FormControl>
-                  <InputOTP autoComplete=""  maxLength={6} {...field} ref={firstOtpInputRef}>
-                    <InputOTPGroup>
-                      {Array.from({ length: 3 }, (_, index) => (
-                        <InputOTPSlot
-                          key={index}
-                          index={index}
-                              
-                        />
-                      ))}
-                    </InputOTPGroup>
-                    <InputOTPSeparator />
-                    <InputOTPGroup>
-                      {Array.from({ length: 3 }, (_, index) => (
-                        <InputOTPSlot
-                          key={index + 3}
-                          index={index + 3}
-                        />
-                      ))}
-                    </InputOTPGroup>
-                  </InputOTP>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </form>
-      </Form>
-    </>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <FormField
+          control={form.control}
+          name="pin"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="mb-2.5 flex justify-center text-center text-paragraph-lg-bold font-semibold">
+                Confirmation Code
+              </FormLabel>
+              <FormControl>
+                <InputOTP
+                  maxLength={6}
+                  {...field}
+                  ref={firstOtpInputRef}
+                  autoComplete="one-time-code"
+                >
+                  <InputOTPGroup>
+                    {Array.from({ length: 3 }, (_, index) => (
+                      <InputOTPSlot key={index} index={index} />
+                    ))}
+                  </InputOTPGroup>
+                  <InputOTPSeparator />
+                  <InputOTPGroup>
+                    {Array.from({ length: 3 }, (_, index) => (
+                      <InputOTPSlot key={index + 3} index={index + 3} />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </form>
+    </Form>
   );
 }

@@ -23,7 +23,7 @@ function OtpPageContent() {
   return (
     <>
   
-      <OtpForm email={email || ""} phone={phone || ""} />
+      <OtpForm email={email || ""} phone={phone || ""} page={"user"} />
     </>
   );
 }

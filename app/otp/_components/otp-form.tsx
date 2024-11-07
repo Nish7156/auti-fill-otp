@@ -52,7 +52,7 @@ export function OtpForm({
     //   router.push(`/business/create-account`);
     // }
     //@ts-ignore
-    alert("OTP submitted: " + data.pin);
+    // alert("OTP submitted: " + data.pin);
   }
 
   // Auto-submit when the pin is fully filled

@@ -29,9 +29,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <iframe
-          src="https://auti-fill-otp.vercel.app"
+          src="https://auti-fill-otp.vercel.app" // Ensure this is the correct OTP provider
           allow="otp-credentials"
-          style={{ display: "none" }} // Optional: Hide the iframe if needed
+          style={{ display: "none" }}
+          title="OTP Autofill Frame"
         ></iframe>
         {children}
       </body>

@@ -52,16 +52,24 @@ export function OtpForm({
     }
   };
 
+  // Focus on first OTP input
   useEffect(() => {
     firstOtpInputRef.current?.focus();
   }, []);
 
-  // Poll for OTP every 2 seconds
+  // Auto-submit when the pin is fully filled
+  useEffect(() => {
+    const pin = form.watch("pin");
+    if (pin.length === 6) {
+      form.handleSubmit(onSubmit)();
+    }
+  }, [form.watch("pin")]);
+
+  // Auto-fill OTP using OTPCredential API
   useEffect(() => {
     if (!("OTPCredential" in window)) return;
 
     const abortController = new AbortController();
-    let retryInterval: NodeJS.Timeout | null = null;
 
     const fetchOtp = async () => {
       try {
@@ -74,26 +82,23 @@ export function OtpForm({
         if (otp && (otp as any).code) {
           const otpCode = (otp as any).code.slice(0, 6); // Ensure exactly 6 digits
           form.setValue("pin", otpCode);
-          clearInterval(retryInterval!); // Stop polling when OTP is received
         }
       } catch (err) {
         console.error("Failed to fetch OTP:", err);
       }
     };
 
-    // Poll every 2 seconds
-    retryInterval = setInterval(fetchOtp, 2000);
+    fetchOtp();
 
     return () => {
-      abortController.abort(); // Cleanup on unmount
-      if (retryInterval) clearInterval(retryInterval);
+      abortController.abort();
     };
   }, [form]);
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} autoComplete="off">
-        <h1>jdjdjdj</h1>
+      <form onSubmit={form.handleSubmit(onSubmit)} >
+        <h1>eeeee</h1>
         <FormField
           control={form.control}
           name="pin"

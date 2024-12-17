@@ -66,6 +66,7 @@ export function OtpForm({
     const fetchOtp = async () => {
       try {
         const otp = await navigator.credentials.get({
+          //@ts-ignore
           otp: { transport: ["sms"] },
           signal: abortController.signal,
         });

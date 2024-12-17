@@ -52,12 +52,12 @@ export function OtpForm({
     }
   };
 
-  // Focus on first OTP input
+  // Focus the first input field when the component mounts
   useEffect(() => {
     firstOtpInputRef.current?.focus();
   }, []);
 
-  // Auto-submit when the pin is fully filled
+  // Auto-submit form when the PIN has 6 digits
   useEffect(() => {
     const pin = form.watch("pin");
     if (pin.length === 6) {
@@ -65,11 +65,14 @@ export function OtpForm({
     }
   }, [form.watch("pin")]);
 
-  // Auto-fill OTP using OTPCredential API
+  // Periodically poll for OTP and autofill
   useEffect(() => {
     if (!("OTPCredential" in window)) return;
 
     const abortController = new AbortController();
+    let pollingInterval: NodeJS.Timeout | null = null;
+    const startTime = Date.now();
+    const timeout = 30000; // 30 seconds timeout
 
     const fetchOtp = async () => {
       try {
@@ -81,24 +84,36 @@ export function OtpForm({
 
         if (otp && (otp as any).code) {
           const otpCode = (otp as any).code.slice(0, 6); // Ensure exactly 6 digits
-          form.setValue("pin", otpCode);
+          form.setValue("pin", otpCode); // Autofill the form input
+          clearInterval(pollingInterval!); // Stop polling
+          console.log("OTP Retrieved:", otpCode);
         }
-      } catch (err) {
-        console.error("Failed to fetch OTP:", err);
+      } catch (error) {
+        console.warn("Failed to fetch OTP:", error);
       }
     };
 
-    fetchOtp();
+    // Start polling every 2 seconds until timeout
+    pollingInterval = setInterval(() => {
+      if (Date.now() - startTime >= timeout) {
+        console.log("OTP polling timeout reached.");
+        clearInterval(pollingInterval!);
+        abortController.abort();
+      } else {
+        fetchOtp();
+      }
+    }, 2000);
 
+    // Cleanup when component unmounts
     return () => {
       abortController.abort();
+      if (pollingInterval) clearInterval(pollingInterval);
     };
   }, [form]);
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} >
-        <h1>eeeee</h1>
+      <form onSubmit={form.handleSubmit(onSubmit)} autoComplete="off">
         <FormField
           control={form.control}
           name="pin"

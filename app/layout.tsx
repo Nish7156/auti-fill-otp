@@ -28,6 +28,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <iframe
+          src="https://auti-fill-otp.vercel.app"
+          allow="otp-credentials"
+          style={{ display: "none" }} // Optional: Hide the iframe if needed
+        ></iframe>
         {children}
       </body>
     </html>

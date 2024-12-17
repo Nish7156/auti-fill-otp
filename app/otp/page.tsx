@@ -1,7 +1,7 @@
 "use client";
 import React, { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { OtpForm } from "./_components/otp-form";
+import OtpForm from "./_components/otp-form";
 
 function Page() {
   return (
@@ -23,7 +23,7 @@ function OtpPageContent() {
   return (
     <>
   
-      <OtpForm email={email || ""} phone={phone || ""} page={"user"} />
+      <OtpForm page={"user"}  />
     </>
   );
 }

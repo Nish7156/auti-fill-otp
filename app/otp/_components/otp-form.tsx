@@ -1,8 +1,8 @@
+'use client'
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useRef } from "react";
-
 import {
   Form,
   FormControl,
@@ -20,9 +20,9 @@ import {
 import { useRouter } from "next/navigation";
 
 const FormSchema = z.object({
-  pin: z.string().min(6, {
-    message: "Your one-time password must be 6 characters.",
-  }),
+  pin: z
+    .string()
+    .length(6, "Your one-time password must be exactly 6 characters."),
 });
 
 export function OtpForm({
@@ -39,69 +39,59 @@ export function OtpForm({
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
-    defaultValues: {
-      pin: "",
-    },
+    defaultValues: { pin: "" },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    console.log(data);
-    // if (page === "user") {
-    //   router.push(`/user/create-account`);
-    // } else if (page === "business") {
-    //   router.push(`/business/create-account`);
-    // }
-    //@ts-ignore
-    // alert("OTP submitted: " + data.pin);
-  }
-
-  // Auto-submit when the pin is fully filled
-  useEffect(() => {
-    if (form.watch("pin").length === 6) {
-      form.handleSubmit(onSubmit)();
+  const onSubmit = (data: z.infer<typeof FormSchema>) => {
+    console.log("OTP Submitted:", data);
+    // Example navigation based on page prop
+    if (page === "user") {
+      router.push(`/user/create-account`);
+    } else if (page === "business") {
+      router.push(`/business/create-account`);
     }
-  }, [form.watch("pin")]);
+  };
 
+  // Auto-focus the first OTP input
   useEffect(() => {
-    if (firstOtpInputRef.current) {
-      firstOtpInputRef.current.focus(); // Set focus to the first OTP input
-    }
+    firstOtpInputRef.current?.focus();
   }, []);
 
+  // Automatically submit when the pin is fully filled
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      //@ts-ignore
+      if (value.pin.length === 6) {
+        form.handleSubmit(onSubmit)();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Handle OTP Auto-fill using OTPCredential
   useEffect(() => {
     if (!("OTPCredential" in window)) return;
 
     const abortController = new AbortController();
 
-    const fetchOtp = async () => {
+    (async () => {
       try {
-        const otpCredentials: CredentialRequestOptions = {
+        const otp = (await navigator.credentials.get({
           //@ts-ignore
           otp: { transport: ["sms"] },
           signal: abortController.signal,
-        };
+        })) as { code: string } | null;
 
-        const otp = (await navigator.credentials.get(otpCredentials)) as {
-          code: string;
-        } | null;
-
-        if (!otp || !otp.code) {
-          throw new Error("OTP retrieval failed: No OTP code found");
+        if (otp?.code) {
+          form.setValue("pin", otp.code.slice(0, 6));
         }
-
-        const otpCode = otp.code.slice(0, 6); // Ensure only 6 digits
-        form.setValue("pin", otpCode); // Set OTP in form state
       } catch (err) {
-        console.log("OTP retrieval error:", err);
+        console.error("Error fetching OTP:", err);
       }
-    };
+    })();
 
-    fetchOtp();
-
-    return () => {
-      abortController.abort(); // Cleanup on component unmount
-    };
-  }, []);
+    return () => abortController.abort();
+  }, [form]);
 
   return (
     <Form {...form}>
@@ -111,7 +101,7 @@ export function OtpForm({
           name="pin"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="mb-2.5 flex justify-center text-center text-paragraph-lg-bold font-semibold">
+              <FormLabel className="text-center font-semibold">
                 Confirmation Code
               </FormLabel>
               <FormControl>

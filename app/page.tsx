@@ -5,34 +5,42 @@ import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const [otp, setOtp] = useState(Array(6).fill(""));
+  const [abortController, setAbortController] = useState(null);
 
   useEffect(() => {
+    // Start listening for OTP immediately
+    startOtpListener();
+
+    return () => {
+      // Cleanup AbortController on component unmount
+      if (abortController) {
+        abortController.abort();
+      }
+    };
+  }, []);
+
+  const startOtpListener = () => {
     if ("OTPCredential" in window) {
       const ac = new AbortController();
+      setAbortController(ac);
 
-      const fetchOtp = async () => {
-        try {
-          //@ts-ignore
-          const otpCredential = await navigator.credentials.get({
-            otp: { transport: ["sms"] },
-            signal: ac.signal,
-          });
-
+      navigator.credentials
+        .get({
+          otp: { transport: ["sms"] },
+          signal: ac.signal,
+        })
+        .then((otpCredential) => {
           if (otpCredential) {
             //@ts-ignore
             const code = otpCredential.code.slice(0, 6); // Ensure only 6 digits
             setOtp(code.split(""));
-            ac.abort();
           }
-        } catch (err) {
-          console.error("OTP Auto-fill failed:", err);
-          ac.abort();
-        }
-      };
-
-      fetchOtp();
+        })
+        .catch((err) => {
+          console.error("OTP Auto-fill failed or aborted:", err);
+        });
     }
-  }, []);
+  };
 
   const handleChange = (value: string, index: number) => {
     const newOtp = [...otp];
@@ -48,7 +56,7 @@ export default function Home() {
 
   return (
     <div className="App">
-      <h1>Enter OTP</h1>
+      <h1>Enter OTP new</h1>
       <h2>Your OTP is: {otp.join("")}</h2>
       <form
         autoComplete="one-time-code"

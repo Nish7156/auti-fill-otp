@@ -10,22 +10,27 @@ export default function Home() {
     if ("OTPCredential" in window) {
       const ac = new AbortController();
 
-      navigator.credentials
-        .get({
+      const fetchOtp = async () => {
+        try {
           //@ts-ignore
-          otp: { transport: ["sms"] },
-          signal: ac.signal,
-        })
-        .then((otp) => {
-          //@ts-ignore
-          const code = otp.code.slice(0, 6); // Ensure only 6 digits
-          setOtp(code.split(""));
-          ac.abort();
-        })
-        .catch((err) => {
+          const otpCredential = await navigator.credentials.get({
+            otp: { transport: ["sms"] },
+            signal: ac.signal,
+          });
+
+          if (otpCredential) {
+            //@ts-ignore
+            const code = otpCredential.code.slice(0, 6); // Ensure only 6 digits
+            setOtp(code.split(""));
+            ac.abort();
+          }
+        } catch (err) {
           console.error("OTP Auto-fill failed:", err);
           ac.abort();
-        });
+        }
+      };
+
+      fetchOtp();
     }
   }, []);
 
@@ -55,6 +60,8 @@ export default function Home() {
             id={`otp-${index}`}
             type="text"
             inputMode="numeric"
+            pattern="\d*"
+            maxLength={1}
             autoComplete={index === 0 ? "one-time-code" : "off"}
             value={digit}
             onChange={(e) => handleChange(e.target.value, index)}
